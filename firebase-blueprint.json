@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role-based access information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "fullName": { "type": "string", "maxLength": 256 },
+        "role": { "type": "string", "enum": ["ADMIN", "TEACHER", "STUDENT", "PARENT"] },
+        "avatarUrl": { "type": "string", "maxLength": 1024 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "subjectSpecialty": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "email", "fullName", "role", "schoolId", "createdAt", "status"]
+    },
+    "ClassRoom": {
+      "title": "ClassRoom",
+      "description": "Classroom or course division",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "gradeLevel": { "type": "string", "maxLength": 20 },
+        "subject": { "type": "string", "maxLength": 100 },
+        "academicYear": { "type": "string", "maxLength": 50 },
+        "roomNumber": { "type": "string", "maxLength": 50 },
+        "homeroomTeacherId": { "type": "string", "maxLength": 128 },
+        "homeroomTeacherName": { "type": "string", "maxLength": 256 },
+        "studentCount": { "type": "number" },
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "gradeLevel", "academicYear", "homeroomTeacherId", "schoolId", "createdAt"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student record in class",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentCode": { "type": "string", "maxLength": 64 },
+        "fullName": { "type": "string", "maxLength": 256 },
+        "gender": { "type": "string", "enum": ["NAM", "NỮ"] },
+        "dateOfBirth": { "type": "string", "maxLength": 32 },
+        "classId": { "type": "string", "maxLength": 128 },
+        "className": { "type": "string", "maxLength": 100 },
+        "rewardPoints": { "type": "number" },
+        "attendanceRate": { "type": "number" },
+        "gpa": { "type": "number" },
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["STUDYING", "LEAVE", "SUSPENDED"] },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "studentCode", "fullName", "gender", "classId", "className", "schoolId", "status", "createdAt"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "Question bank item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 64 },
+        "subject": { "type": "string", "maxLength": 100 },
+        "gradeLevel": { "type": "string", "maxLength": 20 },
+        "type": { "type": "string", "enum": ["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY", "MATCHING"] },
+        "prompt": { "type": "string", "maxLength": 5000 },
+        "points": { "type": "number" },
+        "difficulty": { "type": "string", "enum": ["EASY", "MEDIUM", "HARD", "VERY_HARD"] },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "subject", "gradeLevel", "type", "prompt", "points", "difficulty", "createdAt"]
+    },
+    "Assignment": {
+      "title": "Assignment",
+      "description": "Homework or classroom assignment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 128 },
+        "className": { "type": "string", "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 300 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "subject": { "type": "string", "maxLength": 100 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 256 },
+        "dueDate": { "type": "string", "maxLength": 64 },
+        "maxScore": { "type": "number" },
+        "status": { "type": "string", "enum": ["DRAFT", "PUBLISHED", "CLOSED"] },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "classId", "className", "title", "subject", "teacherId", "dueDate", "maxScore", "status", "createdAt"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Attendance mark per student per session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "classId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 256 },
+        "date": { "type": "string", "maxLength": 32 },
+        "period": { "type": "number" },
+        "status": { "type": "string", "enum": ["PRESENT", "ABSENT_EXCUSED", "ABSENT_UNEXCUSED", "LATE", "EARLY_LEAVE"] },
+        "recordedByTeacherId": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "classId", "studentId", "studentName", "date", "period", "status", "recordedByTeacherId", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "User profiles indexed by User ID"
+    },
+    "/classes/{classId}": {
+      "schema": { "$ref": "ClassRoom" },
+      "description": "Class documents"
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "Student" },
+      "description": "Student information documents"
+    },
+    "/questions/{questionId}": {
+      "schema": { "$ref": "Question" },
+      "description": "Bank of questions and assessments"
+    },
+    "/assignments/{assignmentId}": {
+      "schema": { "$ref": "Assignment" },
+      "description": "Class assignments"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": { "$ref": "AttendanceRecord" },
+      "description": "Student attendance entries"
+    }
+  }
+}

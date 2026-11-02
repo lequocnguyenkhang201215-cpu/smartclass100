@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: default-deny all paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@admin\\.school\\.edu.*') && request.auth.token.email_verified == true)
+      );
+    }
+
+    // Entity Validators
+    function isValidUserProfile(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.fullName is string && data.fullName.size() <= 256 &&
+             data.role in ['ADMIN', 'TEACHER', 'STUDENT', 'PARENT'] &&
+             data.schoolId is string && data.schoolId.size() <= 128 &&
+             data.status in ['ACTIVE', 'INACTIVE'];
+    }
+
+    function isValidClassRoom(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.gradeLevel is string && data.gradeLevel.size() <= 20 &&
+             data.academicYear is string && data.academicYear.size() <= 50 &&
+             data.homeroomTeacherId is string && data.homeroomTeacherId.size() <= 128 &&
+             data.schoolId is string && data.schoolId.size() <= 128;
+    }
+
+    function isValidStudent(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.studentCode is string && data.studentCode.size() <= 64 &&
+             data.fullName is string && data.fullName.size() <= 256 &&
+             data.gender in ['NAM', 'NỮ'] &&
+             data.classId is string && data.classId.size() <= 128 &&
+             data.className is string && data.className.size() <= 100 &&
+             data.schoolId is string && data.schoolId.size() <= 128 &&
+             data.status in ['STUDYING', 'LEAVE', 'SUSPENDED'];
+    }
+
+    function isValidQuestion(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.subject is string && data.subject.size() <= 100 &&
+             data.gradeLevel is string && data.gradeLevel.size() <= 20 &&
+             data.type in ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER', 'ESSAY', 'MATCHING'] &&
+             data.prompt is string && data.prompt.size() <= 5000 &&
+             data.points is number &&
+             data.difficulty in ['EASY', 'MEDIUM', 'HARD', 'VERY_HARD'];
+    }
+
+    function isValidAssignment(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.classId is string && data.classId.size() <= 128 &&
+             data.title is string && data.title.size() <= 300 &&
+             data.subject is string && data.subject.size() <= 100 &&
+             data.teacherId is string && data.teacherId.size() <= 128 &&
+             data.maxScore is number &&
+             data.status in ['DRAFT', 'PUBLISHED', 'CLOSED'];
+    }
+
+    function isValidAttendanceRecord(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.classId is string && data.classId.size() <= 128 &&
+             data.studentId is string && data.studentId.size() <= 128 &&
+             data.date is string && data.date.size() <= 32 &&
+             data.period is number &&
+             data.status in ['PRESENT', 'ABSENT_EXCUSED', 'ABSENT_UNEXCUSED', 'LATE', 'EARLY_LEAVE'] &&
+             data.recordedByTeacherId is string && data.recordedByTeacherId.size() <= 128;
+    }
+
+    // Collection: Users
+    match /users/{userId} {
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(userId) && isValidUserProfile(incoming()) && (isOwner(userId) || isAdmin());
+      allow update: if isSignedIn() && isValidId(userId) && isValidUserProfile(incoming()) && (isOwner(userId) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: Classes
+    match /classes/{classId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(classId) && isValidClassRoom(incoming());
+      allow update: if isSignedIn() && isValidId(classId) && isValidClassRoom(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: Students
+    match /students/{studentId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(studentId) && isValidStudent(incoming());
+      allow update: if isSignedIn() && isValidId(studentId) && isValidStudent(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: Questions
+    match /questions/{questionId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(questionId) && isValidQuestion(incoming());
+      allow update: if isSignedIn() && isValidId(questionId) && isValidQuestion(incoming());
+      allow delete: if isSignedIn() && isValidId(questionId) && (isAdmin() || (existing().authorId == request.auth.uid));
+    }
+
+    // Collection: Assignments
+    match /assignments/{assignmentId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(assignmentId) && isValidAssignment(incoming());
+      allow update: if isSignedIn() && isValidId(assignmentId) && isValidAssignment(incoming());
+      allow delete: if isSignedIn() && isValidId(assignmentId) && (isAdmin() || (existing().teacherId == request.auth.uid));
+    }
+
+    // Collection: Attendance
+    match /attendance/{attendanceId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(attendanceId) && isValidAttendanceRecord(incoming());
+      allow update: if isSignedIn() && isValidId(attendanceId) && isValidAttendanceRecord(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Connection testing doc
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}
